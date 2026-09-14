@@ -5,6 +5,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import io
 import re
+import unicodedata
 import urllib.request
 import streamlit as st
 
@@ -92,6 +93,13 @@ def formatar_moeda(val: str) -> str:
         return f"R$ {formatted}"
     except ValueError:
         return val
+
+def sanitizar_nome_arquivo(nome):
+    """Higieniza nomes de arquivos para impedir rejeição do Gmail (evita 'noname')"""
+    n = unicodedata.normalize('NFKD', str(nome)).encode('ASCII', 'ignore').decode('utf-8')
+    n = re.sub(r'[^a-zA-Z0-9.]', '_', n)  # Substitui acentos, espaços e caracteres especiais por _
+    n = re.sub(r'\.+', '.', n)            # Transforma múltiplos pontos (...) em apenas um (.)
+    return re.sub(r'_+', '_', n).strip('_')
 
 # -----------------------------------------------------------------------------
 # GERADOR DE PDF DA FICHA CADASTRAL PJ
@@ -232,7 +240,7 @@ finalidade_locacao = st.text_input("Finalidade da Locação / Uso do Imóvel *",
 # 2. Garantia da Locação
 st.subheader("2. Garantia da Locação")
 garantia = st.selectbox(
-    "Garantia offered *",
+    "Garantia oferecida *",
     [
         "2 Fiadores (PF) do DF com renda e imóvel",
         "Fiador Pessoa Jurídica (PJ)",
@@ -287,7 +295,10 @@ ref_comerciais = st.text_area("Referências Comerciais (Nome e Telefone de 02 Fo
 # 5. Documentos
 st.markdown("---")
 st.subheader("5. Envio de Documentos (Anexos)")
-st.info("Formatos aceitos: PDF, JPG, PNG. Você pode selecionar múltiplos arquivos em cada campo.")
+
+st.warning("⚠️ **Atenção para enviar vários arquivos:** Para colocar mais de um arquivo no mesmo campo, você deve **selecionar todos eles de uma só vez** na janela que abrir. Se você anexar um e depois clicar no botão para anexar o segundo, o primeiro será substituído.")
+
+st.info("Formatos aceitos: PDF, JPG, PNG.")
 
 doc_contrato_social = st.file_uploader("1. Contrato Social / Estatuto Social (última alteração consolidada) *", accept_multiple_files=True)
 doc_cnpj = st.file_uploader("2. Cartão CNPJ Atualizado *", accept_multiple_files=True)
@@ -392,16 +403,25 @@ if btn_enviar:
                 part_pdf = MIMEBase('application', 'pdf')
                 part_pdf.set_payload(pdf_bytes)
                 encoders.encode_base64(part_pdf)
-                part_pdf.add_header('Content-Disposition', f'attachment; filename="Ficha_Cadastral_PJ_{razao_social.replace(" ", "_")}.pdf"')
+                nome_pdf_seguro = sanitizar_nome_arquivo(f"Ficha_Cadastral_PJ_{razao_social}.pdf")
+                part_pdf.add_header('Content-Disposition', 'attachment', filename=nome_pdf_seguro)
                 msg.attach(part_pdf)
 
                 def anexar_uploads(lista_uploads, categoria):
                     if lista_uploads:
                         for upload in lista_uploads:
-                            part = MIMEBase('application', 'octet-stream')
-                            part.set_payload(upload.read())
+                            upload.seek(0)
+                            file_bytes = upload.read()
+                            if not file_bytes:
+                                continue
+                            
+                            nome_seguro = sanitizar_nome_arquivo(upload.name)
+                            nome_final = f"{categoria}_{nome_seguro}"
+                            
+                            part = MIMEBase('application', 'octet-stream', name=nome_final)
+                            part.set_payload(file_bytes)
                             encoders.encode_base64(part)
-                            part.add_header('Content-Disposition', f'attachment; filename="{categoria}_{upload.name}"')
+                            part.add_header('Content-Disposition', 'attachment', filename=nome_final)
                             msg.attach(part)
 
                 anexar_uploads(doc_contrato_social, "CONTRATO_SOCIAL")
