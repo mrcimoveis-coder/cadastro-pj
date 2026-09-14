@@ -147,7 +147,7 @@ def gerar_pdf_ficha_pj(dados: dict) -> bytes:
         "CNPJ": dados["cnpj"],
         "Inscrição Estadual": dados["insc_estadual"],
         "Inscrição Municipal": dados["insc_municipal"],
-        "Data de Fundacão": dados["dt_fundacao"],
+        "Data de Fundação": dados["dt_fundacao"],
         "Ramo de Atividade": dados["ramo_atividade"],
         "E-mail Corporativo": dados["email_empresa"],
         "Telefone Comercial": dados["tel_empresa"],
@@ -232,7 +232,7 @@ finalidade_locacao = st.text_input("Finalidade da Locação / Uso do Imóvel *",
 # 2. Garantia da Locação
 st.subheader("2. Garantia da Locação")
 garantia = st.selectbox(
-    "Garantia oferecida *",
+    "Garantia offered *",
     [
         "2 Fiadores (PF) do DF com renda e imóvel",
         "Fiador Pessoa Jurídica (PJ)",
@@ -257,19 +257,19 @@ for i in range(int(num_socios)):
     st.markdown(f"### Sócio / Representante Legal {i+1}")
     col_s1, col_s2 = st.columns(2)
     with col_s1:
-        s_nome = st.text_input(f"Nome Completo *", key=f"s_nome_{i}")
-        s_cpf_raw = st.text_input(f"CPF *", placeholder="000.000.000-00", key=f"s_cpf_{i}")
-        s_rg = st.text_input(f"Número do RG *", key=f"s_rg_{i}")
-        s_rg_orgao = st.text_input(f"Órgão Emissor / UF *", placeholder="Ex: SSP/DF", key=f"s_rg_org_{i}")
-        s_dt_nasc_raw = st.text_input(f"Data de Nascimento *", placeholder="DD/MM/AAAA", key=f"s_dtnasc_{i}")
+        s_nome = st.text_input("Nome Completo *", key=f"s_nome_{i}")
+        s_cpf_raw = st.text_input("CPF *", placeholder="000.000.000-00", key=f"s_cpf_{i}")
+        s_rg = st.text_input("Número do RG *", key=f"s_rg_{i}")
+        s_rg_orgao = st.text_input("Órgão Emissor / UF *", placeholder="Ex: SSP/DF", key=f"s_rg_org_{i}")
+        s_dt_nasc_raw = st.text_input("Data de Nascimento *", placeholder="DD/MM/AAAA", key=f"s_dtnasc_{i}")
     with col_s2:
-        s_tipo = st.selectbox(f"Função na Sociedade *", ["Sócio-Administrador", "Sócio (Sem adm)", "Procurador / Rep. Legal"], key=f"s_tipo_{i}")
-        s_pct = st.text_input(f"Percentual de Participação (%) *", placeholder="Ex: 50", key=f"s_pct_{i}")
-        s_estado_civil = st.selectbox(f"Estado Civil *", ["Solteiro(a)", "Casado(a)", "União Estável", "Divorciado(a)", "Viúvo(a)"], key=f"s_estcivil_{i}")
-        s_celular_raw = st.text_input(f"Telefone Celular *", placeholder="(61) 90000-0000", key=f"s_cel_{i}")
-        s_email = st.text_input(f"E-mail Pessoal *", key=f"s_email_{i}")
+        s_tipo = st.selectbox("Função na Sociedade *", ["Sócio-Administrador", "Sócio (Sem adm)", "Procurador / Rep. Legal"], key=f"s_tipo_{i}")
+        s_pct = st.text_input("Percentual de Participação (%) *", placeholder="Ex: 50", key=f"s_pct_{i}")
+        s_estado_civil = st.selectbox("Estado Civil *", ["Solteiro(a)", "Casado(a)", "União Estável", "Divorciado(a)", "Viúvo(a)"], key=f"s_estcivil_{i}")
+        s_celular_raw = st.text_input("Telefone Celular *", placeholder="(61) 90000-0000", key=f"s_cel_{i}")
+        s_email = st.text_input("E-mail Pessoal *", key=f"s_email_{i}")
     
-    s_endereco = st.text_input(f"Endereço Residencial Completo (com CEP) *", key=f"s_end_{i}")
+    s_endereco = st.text_input("Endereço Residencial Completo (com CEP) *", key=f"s_end_{i}")
 
     socios_inputs.append({
         "nome": s_nome, "cpf_raw": s_cpf_raw, "rg": s_rg, "rg_orgao": s_rg_orgao,
@@ -365,11 +365,11 @@ if btn_enviar:
                 smtp_port = st.secrets["smtp"]["port"]
                 sender_email = st.secrets["smtp"]["email"]
                 sender_password = st.secrets["smtp"]["password"]
-                receiver_email = "aluguel@mrcimoveis.com.br"
+                receiver_emails = ["aluguel@mrcimoveis.com.br", "comercial@mrcimoveis.com.br"]
 
                 msg = MIMEMultipart()
                 msg['From'] = sender_email
-                msg['To'] = receiver_email
+                msg['To'] = ", ".join(receiver_emails)
                 msg['Subject'] = f"NOVO CADASTRO PJ - {razao_social}"
 
                 html_body = f"""
@@ -414,7 +414,7 @@ if btn_enviar:
                 server = smtplib.SMTP(smtp_server, smtp_port)
                 server.starttls()
                 server.login(sender_email, sender_password)
-                server.sendmail(sender_email, receiver_email, msg.as_string())
+                server.sendmail(sender_email, receiver_emails, msg.as_string())
                 server.quit()
 
                 st.success("✅ Ficha cadastral PJ e documentos enviados com sucesso para a MRC Imóveis!")
